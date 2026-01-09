@@ -1,0 +1,125 @@
+name: CI/CD Online Boutique
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  RESOURCE_GROUP: rg-cloud-project
+  AKS_NAME: aks-cloud-project
+  ACR_NAME: acrcloudproject123
+  IMAGE_TAG: v1
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set AKS Credentials
+        run: az aks get-credentials --resource-group $RESOURCE_GROUP --name $AKS_NAME --overwrite-existing
+
+      # ================================
+      # Build & Push Docker images
+      # ================================
+      - name: Build & Push productcatalogservice
+        run: |
+          docker build -t $ACR_NAME.azurecr.io/productcatalogservice:$IMAGE_TAG ./src/productcatalogservice
+          docker push $ACR_NAME.azurecr.io/productcatalogservice:$IMAGE_TAG
+
+      - name: Build & Push adservice
+        run: |
+          docker build -t $ACR_NAME.azurecr.io/adservice:$IMAGE_TAG ./src/adservice
+          docker push $ACR_NAME.azurecr.io/adservice:$IMAGE_TAG
+
+      - name: Build & Push cartservice
+        run: |
+          docker build -t $ACR_NAME.azurecr.io/cartservice:$IMAGE_TAG ./src/cartservice
+          docker push $ACR_NAME.azurecr.io/cartservice:$IMAGE_TAG
+
+      - name: Build & Push checkoutservice
+        run: |
+          docker build -t $ACR_NAME.azurecr.io/checkoutservice:$IMAGE_TAG ./src/checkoutservice
+          docker push $ACR_NAME.azurecr.io/checkoutservice:$IMAGE_TAG
+
+      - name: Build & Push currencyservice
+        run: |
+          docker build -t $ACR_NAME.azurecr.io/currencyservice:$IMAGE_TAG ./src/currencyservice
+          docker push $ACR_NAME.azurecr.io/currencyservice:$IMAGE_TAG
+
+      - name: Build & Push emailservice
+        run: |
+          docker build -t $ACR_NAME.azurecr.io/emailservice:$IMAGE_TAG ./src/emailservice
+          docker push $ACR_NAME.azurecr.io/emailservice:$IMAGE_TAG
+
+      - name: Build & Push frontend
+        run: |
+          docker build -t $ACR_NAME.azurecr.io/frontend:$IMAGE_TAG ./src/frontend
+          docker push $ACR_NAME.azurecr.io/frontend:$IMAGE_TAG
+
+      - name: Build & Push loadgenerator
+        run: |
+          docker build -t $ACR_NAME.azurecr.io/loadgenerator:$IMAGE_TAG ./src/loadgenerator
+          docker push $ACR_NAME.azurecr.io/loadgenerator:$IMAGE_TAG
+
+      - name: Build & Push paymentservice
+        run: |
+          docker build -t $ACR_NAME.azurecr.io/paymentservice:$IMAGE_TAG ./src/paymentservice
+          docker push $ACR_NAME.azurecr.io/paymentservice:$IMAGE_TAG
+
+      - name: Build & Push recommendationservice
+        run: |
+          docker build -t $ACR_NAME.azurecr.io/recommendationservice:$IMAGE_TAG ./src/recommendationservice
+          docker push $ACR_NAME.azurecr.io/recommendationservice:$IMAGE_TAG
+
+      - name: Build & Push redis-cart
+        run: |
+          docker build -t $ACR_NAME.azurecr.io/redis-cart:$IMAGE_TAG ./src/redis-cart
+          docker push $ACR_NAME.azurecr.io/redis-cart:$IMAGE_TAG
+
+      - name: Build & Push shippingservice
+        run: |
+          docker build -t $ACR_NAME.azurecr.io/shippingservice:$IMAGE_TAG ./src/shippingservice
+          docker push $ACR_NAME.azurecr.io/shippingservice:$IMAGE_TAG
+
+      # ================================
+      # Update Deployments AKS
+      # ================================
+      - name: Update Deployments
+        run: |
+          kubectl set image deployment/productcatalogservice productcatalogservice=$ACR_NAME.azurecr.io/productcatalogservice:$IMAGE_TAG
+          kubectl set image deployment/adservice adservice=$ACR_NAME.azurecr.io/adservice:$IMAGE_TAG
+          kubectl set image deployment/cartservice cartservice=$ACR_NAME.azurecr.io/cartservice:$IMAGE_TAG
+          kubectl set image deployment/checkoutservice checkoutservice=$ACR_NAME.azurecr.io/checkoutservice:$IMAGE_TAG
+          kubectl set image deployment/currencyservice currencyservice=$ACR_NAME.azurecr.io/currencyservice:$IMAGE_TAG
+          kubectl set image deployment/emailservice emailservice=$ACR_NAME.azurecr.io/emailservice:$IMAGE_TAG
+          kubectl set image deployment/frontend frontend=$ACR_NAME.azurecr.io/frontend:$IMAGE_TAG
+          kubectl set image deployment/loadgenerator loadgenerator=$ACR_NAME.azurecr.io/loadgenerator:$IMAGE_TAG
+          kubectl set image deployment/paymentservice paymentservice=$ACR_NAME.azurecr.io/paymentservice:$IMAGE_TAG
+          kubectl set image deployment/recommendationservice recommendationservice=$ACR_NAME.azurecr.io/recommendationservice:$IMAGE_TAG
+          kubectl set image deployment/redis-cart redis-cart=$ACR_NAME.azurecr.io/redis-cart:$IMAGE_TAG
+          kubectl set image deployment/shippingservice shippingservice=$ACR_NAME.azurecr.io/shippingservice:$IMAGE_TAG
+
+      - name: Rollout status
+        run: |
+          kubectl rollout status deployment/productcatalogservice
+          kubectl rollout status deployment/adservice
+          kubectl rollout status deployment/cartservice
+          kubectl rollout status deployment/checkoutservice
+          kubectl rollout status deployment/currencyservice
+          kubectl rollout status deployment/emailservice
+          kubectl rollout status deployment/frontend
+          kubectl rollout status deployment/loadgenerator
+          kubectl rollout status deployment/paymentservice
+          kubectl rollout status deployment/recommendationservice
+          kubectl rollout status deployment/redis-cart
+          kubectl rollout status deployment/shippingservice

@@ -128,6 +128,21 @@
             "categories": [
                 "kitchen"
             ]
+        },
+        {
+            "id": "NEW123",
+            "name": "Leather-Bckpack",
+            "description": "A lamp you can control with your phone.",
+            "picture": "/static/img/products/leather-bckpack.jpg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 29,
+                "nanos": 990000000
+            },
+            "categories": [
+                "home",
+                "accessories"
+            ]
         }
     ]
 }
