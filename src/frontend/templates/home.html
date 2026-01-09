@@ -18,7 +18,7 @@
 
 {{ template "header" . }}
 <div {{ with $.platform_css }} class="{{.}}" {{ end }}>
-  <span class="platform-flag">
+  <span class="platform-flag" style="display: none;">
     {{$.platform_name}}
   </span>
 </div>

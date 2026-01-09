@@ -1,0 +1,45 @@
+name: AKS CI/CD Full Microservices
+
+on:
+    push:
+        branches: [main]
+
+env:
+    ACR_NAME: acrcloudproject123
+    RESOURCE_GROUP: rg-cloud-project
+    AKS_NAME: aks-cloud-project
+    IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+    build-and-deploy:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v3
+
+            - name: Login to Azure
+              uses: azure/login@v1
+              with:
+                  creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+            - name: Build and Push Docker Images
+              run: |
+                  # List of services
+                  services=(frontend adservice cartservice checkoutservice currencyservice emailservice paymentservice productcatalogservice recommendationservice redis-cart shippingservice)
+                  for service in "${services[@]}"; do
+                    echo "Building and pushing $service..."
+                    docker build -t $ACR_NAME.azurecr.io/$service:$IMAGE_TAG ./$service
+                    docker push $ACR_NAME.azurecr.io/$service:$IMAGE_TAG
+                  done
+
+            - name: Set Kubernetes context
+              run: |
+                  az aks get-credentials --resource-group $RESOURCE_GROUP --name $AKS_NAME
+
+            - name: Update Kubernetes Deployments
+              run: |
+                  for service in "${services[@]}"; do
+                    echo "Updating deployment for $service..."
+                    kubectl set image deployment/$service $service=$ACR_NAME.azurecr.io/$service:$IMAGE_TAG
+                  done
