@@ -7,7 +7,7 @@ COPY src ./src
 COPY tests ./tests
 
 RUN dotnet restore
-RUN dotnet publish src/cartservice -c Release -o /app/publish
+RUN dotnet publish ./src/cartservice.csproj -c Release -o /app/publish
 
 # Runtime Stage
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
