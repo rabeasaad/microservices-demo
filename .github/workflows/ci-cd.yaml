@@ -14,6 +14,7 @@ env:
 
 jobs:
   build-and-deploy:
+    # تشغيل على GitHub-hosted runner مباشرة
     runs-on: ubuntu-latest
 
     steps:
@@ -47,11 +48,12 @@ jobs:
           --overwrite-existing
 
       # ================================
-      # Build & Push all services
+      # Build & Push all Docker Images
       # ================================
-      - name: Build & Push all services
+      - name: Build & Push Docker Images
         run: |
           SERVICES="productcatalogservice adservice cartservice checkoutservice currencyservice emailservice frontend loadgenerator paymentservice recommendationservice redis-cart shippingservice"
+
           for service in $SERVICES; do
             echo "🔹 Building and pushing $service..."
             docker build -t $ACR_NAME.azurecr.io/$service:$IMAGE_TAG ./src/$service
@@ -81,15 +83,6 @@ jobs:
       # ================================
       - name: Rollout status
         run: |
-          kubectl rollout status deployment/productcatalogservice
-          kubectl rollout status deployment/adservice
-          kubectl rollout status deployment/cartservice
-          kubectl rollout status deployment/checkoutservice
-          kubectl rollout status deployment/currencyservice
-          kubectl rollout status deployment/emailservice
-          kubectl rollout status deployment/frontend
-          kubectl rollout status deployment/loadgenerator
-          kubectl rollout status deployment/paymentservice
-          kubectl rollout status deployment/recommendationservice
-          kubectl rollout status deployment/redis-cart
-          kubectl rollout status deployment/shippingservice
+          for service in productcatalogservice adservice cartservice checkoutservice currencyservice emailservice frontend loadgenerator paymentservice recommendationservice redis-cart shippingservice; do
+            kubectl rollout status deployment/$service
+          done
