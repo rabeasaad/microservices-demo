@@ -17,6 +17,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # ================================
+      # Checkout repository
+      # ================================
       - name: Checkout repository
         uses: actions/checkout@v3
 
@@ -34,7 +37,7 @@ jobs:
       - name: Login to Azure Container Registry
         uses: azure/docker-login@v1
         with:
-          login-server: acrcloudproject123.azurecr.io
+          login-server: ${{ env.ACR_NAME }}.azurecr.io
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
 
@@ -42,73 +45,29 @@ jobs:
       # Set AKS Credentials
       # ================================
       - name: Set AKS Credentials
-        run: az aks get-credentials --resource-group $RESOURCE_GROUP --name $AKS_NAME --overwrite-existing
+        run: az aks get-credentials --resource-group ${{ env.RESOURCE_GROUP }} --name ${{ env.AKS_NAME }} --overwrite-existing
 
       # ================================
-      # Build & Push Docker images
+      # Build & Push Docker Images
       # ================================
       - name: Build & Push productcatalogservice
         run: |
+          echo "🔹 Building productcatalogservice Docker image..."
           docker build -t $ACR_NAME.azurecr.io/productcatalogservice:$IMAGE_TAG ./src/productcatalogservice
+          echo "🔹 Pushing productcatalogservice Docker image to ACR..."
           docker push $ACR_NAME.azurecr.io/productcatalogservice:$IMAGE_TAG
 
-      - name: Build & Push adservice
+      - name: Build & Push other services
         run: |
-          docker build -t $ACR_NAME.azurecr.io/adservice:$IMAGE_TAG ./src/adservice
-          docker push $ACR_NAME.azurecr.io/adservice:$IMAGE_TAG
-
-      - name: Build & Push cartservice
-        run: |
-          docker build -t $ACR_NAME.azurecr.io/cartservice:$IMAGE_TAG ./src/cartservice
-          docker push $ACR_NAME.azurecr.io/cartservice:$IMAGE_TAG
-
-      - name: Build & Push checkoutservice
-        run: |
-          docker build -t $ACR_NAME.azurecr.io/checkoutservice:$IMAGE_TAG ./src/checkoutservice
-          docker push $ACR_NAME.azurecr.io/checkoutservice:$IMAGE_TAG
-
-      - name: Build & Push currencyservice
-        run: |
-          docker build -t $ACR_NAME.azurecr.io/currencyservice:$IMAGE_TAG ./src/currencyservice
-          docker push $ACR_NAME.azurecr.io/currencyservice:$IMAGE_TAG
-
-      - name: Build & Push emailservice
-        run: |
-          docker build -t $ACR_NAME.azurecr.io/emailservice:$IMAGE_TAG ./src/emailservice
-          docker push $ACR_NAME.azurecr.io/emailservice:$IMAGE_TAG
-
-      - name: Build & Push frontend
-        run: |
-          docker build -t $ACR_NAME.azurecr.io/frontend:$IMAGE_TAG ./src/frontend
-          docker push $ACR_NAME.azurecr.io/frontend:$IMAGE_TAG
-
-      - name: Build & Push loadgenerator
-        run: |
-          docker build -t $ACR_NAME.azurecr.io/loadgenerator:$IMAGE_TAG ./src/loadgenerator
-          docker push $ACR_NAME.azurecr.io/loadgenerator:$IMAGE_TAG
-
-      - name: Build & Push paymentservice
-        run: |
-          docker build -t $ACR_NAME.azurecr.io/paymentservice:$IMAGE_TAG ./src/paymentservice
-          docker push $ACR_NAME.azurecr.io/paymentservice:$IMAGE_TAG
-
-      - name: Build & Push recommendationservice
-        run: |
-          docker build -t $ACR_NAME.azurecr.io/recommendationservice:$IMAGE_TAG ./src/recommendationservice
-          docker push $ACR_NAME.azurecr.io/recommendationservice:$IMAGE_TAG
-
-      - name: Build & Push redis-cart
-        run: |
-          docker build -t $ACR_NAME.azurecr.io/redis-cart:$IMAGE_TAG ./src/redis-cart
-          docker push $ACR_NAME.azurecr.io/redis-cart:$IMAGE_TAG
-
-      - name: Build & Push shippingservice
-        run: |
-          docker build -t $ACR_NAME.azurecr.io/shippingservice:$IMAGE_TAG ./src/shippingservice
-          docker push $ACR_NAME.azurecr.io/shippingservice:$IMAGE_TAG
+          for service in adservice cartservice checkoutservice currencyservice emailservice frontend loadgenerator paymentservice recommendationservice redis-cart shippingservice; do
+            echo "🔹 Building $service Docker image..."
+            docker build -t $ACR_NAME.azurecr.io/$service:$IMAGE_TAG ./src/$service
+            echo "🔹 Pushing $service Docker image to ACR..."
+            docker push $ACR_NAME.azurecr.io/$service:$IMAGE_TAG
+          done
 
       # ================================
-      # Update Deployments AKS
+      # Update Deployments in AKS
       # ================================
       - name: Update Deployments
         run: |
@@ -125,6 +84,9 @@ jobs:
           kubectl set image deployment/redis-cart redis-cart=$ACR_NAME.azurecr.io/redis-cart:$IMAGE_TAG
           kubectl set image deployment/shippingservice shippingservice=$ACR_NAME.azurecr.io/shippingservice:$IMAGE_TAG
 
+      # ================================
+      # Rollout Status
+      # ================================
       - name: Rollout status
         run: |
           kubectl rollout status deployment/productcatalogservice
