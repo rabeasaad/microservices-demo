@@ -41,16 +41,17 @@ jobs:
       # Set AKS Credentials
       # ================================
       - name: Set AKS Credentials
-        run: |
-          az aks get-credentials --resource-group $RESOURCE_GROUP --name $AKS_NAME --overwrite-existing
+        run: az aks get-credentials \
+          --resource-group $RESOURCE_GROUP \
+          --name $AKS_NAME \
+          --overwrite-existing
 
       # ================================
       # Build & Push all services
       # ================================
-      - name: Build & Push Docker Images
+      - name: Build & Push all services
         run: |
           SERVICES="productcatalogservice adservice cartservice checkoutservice currencyservice emailservice frontend loadgenerator paymentservice recommendationservice redis-cart shippingservice"
-
           for service in $SERVICES; do
             echo "🔹 Building and pushing $service..."
             docker build -t $ACR_NAME.azurecr.io/$service:$IMAGE_TAG ./src/$service
