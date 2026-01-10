@@ -32,7 +32,7 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       # ================================
-      # Login to Azure Container Registry
+      # Login to ACR
       # ================================
       - name: Login to ACR
         run: az acr login --name $ACR_NAME
@@ -47,12 +47,11 @@ jobs:
           --overwrite-existing
 
       # ================================
-      # Build & Push Docker Images
+      # List of existing services
       # ================================
       - name: Build & Push Docker Images
         run: |
           SERVICES="productcatalogservice adservice cartservice checkoutservice currencyservice emailservice paymentservice recommendationservice redis-cart shippingservice"
-
           for service in $SERVICES; do
             echo "🔹 Building and pushing $service..."
             docker build -t $ACR_NAME.azurecr.io/$service:$IMAGE_TAG ./src/$service
