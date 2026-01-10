@@ -132,7 +132,7 @@
         {
             "id": "NEW123",
             "name": "Leather-Bckpack",
-            "description": "A lamp you can control with your phone.",
+            "description": "A high-quality leather backpack suitable for daily use and travel.",
             "picture": "/static/img/products/leather-bckpack.jpg",
             "priceUsd": {
                 "currencyCode": "USD",
