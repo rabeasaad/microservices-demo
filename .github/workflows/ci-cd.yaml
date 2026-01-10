@@ -20,11 +20,27 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # ================================
+      # Azure Login
+      # ================================
       - name: Azure Login
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      # ================================
+      # Login to Azure Container Registry
+      # ================================
+      - name: Login to Azure Container Registry
+        uses: azure/docker-login@v1
+        with:
+          login-server: acrcloudproject123.azurecr.io
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      # ================================
+      # Set AKS Credentials
+      # ================================
       - name: Set AKS Credentials
         run: az aks get-credentials --resource-group $RESOURCE_GROUP --name $AKS_NAME --overwrite-existing
 
@@ -96,7 +112,7 @@ jobs:
       # ================================
       - name: Update Deployments
         run: |
-          kubectl set image deployment/productcatalogservice productcatalogservice=$ACR_NAME.azurecr.io/productcatalogservice:$IMAGE_TAG
+          kubectl set image deployment/productcatalogservice server=$ACR_NAME.azurecr.io/productcatalogservice:$IMAGE_TAG
           kubectl set image deployment/adservice adservice=$ACR_NAME.azurecr.io/adservice:$IMAGE_TAG
           kubectl set image deployment/cartservice cartservice=$ACR_NAME.azurecr.io/cartservice:$IMAGE_TAG
           kubectl set image deployment/checkoutservice checkoutservice=$ACR_NAME.azurecr.io/checkoutservice:$IMAGE_TAG
