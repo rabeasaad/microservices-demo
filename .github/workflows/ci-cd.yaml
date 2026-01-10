@@ -14,7 +14,6 @@ env:
 
 jobs:
   build-and-deploy:
-    # تشغيل على GitHub-hosted runner مباشرة
     runs-on: ubuntu-latest
 
     steps:
@@ -48,11 +47,11 @@ jobs:
           --overwrite-existing
 
       # ================================
-      # Build & Push all Docker Images
+      # Build & Push Docker Images
       # ================================
       - name: Build & Push Docker Images
         run: |
-          SERVICES="productcatalogservice adservice cartservice checkoutservice currencyservice emailservice frontend loadgenerator paymentservice recommendationservice redis-cart shippingservice"
+          SERVICES="productcatalogservice adservice cartservice checkoutservice currencyservice emailservice paymentservice recommendationservice redis-cart shippingservice"
 
           for service in $SERVICES; do
             echo "🔹 Building and pushing $service..."
@@ -71,8 +70,6 @@ jobs:
           kubectl set image deployment/checkoutservice checkoutservice=$ACR_NAME.azurecr.io/checkoutservice:$IMAGE_TAG
           kubectl set image deployment/currencyservice currencyservice=$ACR_NAME.azurecr.io/currencyservice:$IMAGE_TAG
           kubectl set image deployment/emailservice emailservice=$ACR_NAME.azurecr.io/emailservice:$IMAGE_TAG
-          kubectl set image deployment/frontend frontend=$ACR_NAME.azurecr.io/frontend:$IMAGE_TAG
-          kubectl set image deployment/loadgenerator loadgenerator=$ACR_NAME.azurecr.io/loadgenerator:$IMAGE_TAG
           kubectl set image deployment/paymentservice paymentservice=$ACR_NAME.azurecr.io/paymentservice:$IMAGE_TAG
           kubectl set image deployment/recommendationservice recommendationservice=$ACR_NAME.azurecr.io/recommendationservice:$IMAGE_TAG
           kubectl set image deployment/redis-cart redis-cart=$ACR_NAME.azurecr.io/redis-cart:$IMAGE_TAG
@@ -83,6 +80,13 @@ jobs:
       # ================================
       - name: Rollout status
         run: |
-          for service in productcatalogservice adservice cartservice checkoutservice currencyservice emailservice frontend loadgenerator paymentservice recommendationservice redis-cart shippingservice; do
-            kubectl rollout status deployment/$service
-          done
+          kubectl rollout status deployment/productcatalogservice
+          kubectl rollout status deployment/adservice
+          kubectl rollout status deployment/cartservice
+          kubectl rollout status deployment/checkoutservice
+          kubectl rollout status deployment/currencyservice
+          kubectl rollout status deployment/emailservice
+          kubectl rollout status deployment/paymentservice
+          kubectl rollout status deployment/recommendationservice
+          kubectl rollout status deployment/redis-cart
+          kubectl rollout status deployment/shippingservice
