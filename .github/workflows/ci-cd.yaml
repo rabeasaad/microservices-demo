@@ -60,6 +60,7 @@ jobs:
       - name: Build & Push other services
         run: |
           for service in adservice cartservice checkoutservice currencyservice emailservice frontend loadgenerator paymentservice recommendationservice redis-cart shippingservice; do
+            echo "Building and pushing $service..."
             docker build -t $ACR_NAME.azurecr.io/$service:$IMAGE_TAG ./src/$service
             docker push $ACR_NAME.azurecr.io/$service:$IMAGE_TAG
           done
