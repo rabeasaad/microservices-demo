@@ -5,6 +5,9 @@ on:
     branches:
       - main
 
+env:
+  IMAGE_TAG: v1
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -31,7 +34,13 @@ jobs:
           docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/frontend:${{ github.sha }} ./src/frontend
           docker push ${{ secrets.ACR_LOGIN_SERVER }}/frontend:${{ github.sha }}
 
-      # 5️⃣ Get AKS Credentials
+      # 5️⃣ Build & Push Product Catalog Image
+      - name: Build and Push Product Catalog Image
+        run: |
+          docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/productcatalogservice:${{ github.sha }} ./src/productcatalogservice
+          docker push ${{ secrets.ACR_LOGIN_SERVER }}/productcatalogservice:${{ github.sha }}
+
+      # 6️⃣ Get AKS Credentials
       - name: Get AKS credentials
         run: |
           az aks get-credentials \
@@ -39,8 +48,14 @@ jobs:
             --name ${{ secrets.AKS_CLUSTER_NAME }} \
             --overwrite-existing
 
-      # 6️⃣ Deploy to AKS
+      # 7️⃣ Deploy Frontend to AKS
       - name: Deploy Frontend to AKS
         run: |
           kubectl set image deployment/frontend server=${{ secrets.ACR_LOGIN_SERVER }}/frontend:${{ github.sha }}
           kubectl rollout status deployment/frontend
+
+      # 8️⃣ Deploy Product Catalog to AKS
+      - name: Deploy Product Catalog to AKS
+        run: |
+          kubectl set image deployment/productcatalogservice server=${{ secrets.ACR_LOGIN_SERVER }}/productcatalogservice:${{ github.sha }}
+          kubectl rollout status deployment/productcatalogservice
