@@ -136,7 +136,7 @@
             "picture": "/static/img/products/leather-backpack.jpg",
             "priceUsd": {
                 "currencyCode": "USD",
-                "units": 65,
+                "units": 60,
                 "nanos": 990000000
             },
             "categories": [
