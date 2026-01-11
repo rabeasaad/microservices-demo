@@ -32,30 +32,36 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       # ================================
-      # Login to ACR
+      # Login to Azure Container Registry
       # ================================
       - name: Login to ACR
-        run: az acr login --name $ACR_NAME
+        run: az acr login --name ${{ env.ACR_NAME }}
 
       # ================================
       # Set AKS Credentials
       # ================================
       - name: Set AKS Credentials
-        run: az aks get-credentials \
-          --resource-group $RESOURCE_GROUP \
-          --name $AKS_NAME \
-          --overwrite-existing
+        run: |
+          az aks get-credentials --resource-group ${{ env.RESOURCE_GROUP }} --name ${{ env.AKS_NAME }} --overwrite-existing
 
       # ================================
-      # List of existing services
+      # Build & Push productcatalogservice
       # ================================
-      - name: Build & Push Docker Images
+      - name: Build & Push productcatalogservice
         run: |
-          SERVICES="productcatalogservice adservice cartservice checkoutservice currencyservice emailservice paymentservice recommendationservice redis-cart shippingservice"
+          docker build -t ${{ env.ACR_NAME }}.azurecr.io/productcatalogservice:${{ env.IMAGE_TAG }} ./src/productcatalogservice
+          docker push ${{ env.ACR_NAME }}.azurecr.io/productcatalogservice:${{ env.IMAGE_TAG }}
+
+      # ================================
+      # Build & Push remaining services
+      # ================================
+      - name: Build & Push other services
+        run: |
+          SERVICES="adservice cartservice checkoutservice currencyservice emailservice frontend loadgenerator paymentservice recommendationservice redis-cart shippingservice"
           for service in $SERVICES; do
             echo "🔹 Building and pushing $service..."
-            docker build -t $ACR_NAME.azurecr.io/$service:$IMAGE_TAG ./src/$service
-            docker push $ACR_NAME.azurecr.io/$service:$IMAGE_TAG
+            docker build -t ${{ env.ACR_NAME }}.azurecr.io/$service:${{ env.IMAGE_TAG }} ./src/$service
+            docker push ${{ env.ACR_NAME }}.azurecr.io/$service:${{ env.IMAGE_TAG }}
           done
 
       # ================================
@@ -63,16 +69,18 @@ jobs:
       # ================================
       - name: Update Deployments
         run: |
-          kubectl set image deployment/productcatalogservice server=$ACR_NAME.azurecr.io/productcatalogservice:$IMAGE_TAG
-          kubectl set image deployment/adservice adservice=$ACR_NAME.azurecr.io/adservice:$IMAGE_TAG
-          kubectl set image deployment/cartservice cartservice=$ACR_NAME.azurecr.io/cartservice:$IMAGE_TAG
-          kubectl set image deployment/checkoutservice checkoutservice=$ACR_NAME.azurecr.io/checkoutservice:$IMAGE_TAG
-          kubectl set image deployment/currencyservice currencyservice=$ACR_NAME.azurecr.io/currencyservice:$IMAGE_TAG
-          kubectl set image deployment/emailservice emailservice=$ACR_NAME.azurecr.io/emailservice:$IMAGE_TAG
-          kubectl set image deployment/paymentservice paymentservice=$ACR_NAME.azurecr.io/paymentservice:$IMAGE_TAG
-          kubectl set image deployment/recommendationservice recommendationservice=$ACR_NAME.azurecr.io/recommendationservice:$IMAGE_TAG
-          kubectl set image deployment/redis-cart redis-cart=$ACR_NAME.azurecr.io/redis-cart:$IMAGE_TAG
-          kubectl set image deployment/shippingservice shippingservice=$ACR_NAME.azurecr.io/shippingservice:$IMAGE_TAG
+          kubectl set image deployment/productcatalogservice server=${{ env.ACR_NAME }}.azurecr.io/productcatalogservice:${{ env.IMAGE_TAG }}
+          kubectl set image deployment/adservice adservice=${{ env.ACR_NAME }}.azurecr.io/adservice:${{ env.IMAGE_TAG }}
+          kubectl set image deployment/cartservice cartservice=${{ env.ACR_NAME }}.azurecr.io/cartservice:${{ env.IMAGE_TAG }}
+          kubectl set image deployment/checkoutservice checkoutservice=${{ env.ACR_NAME }}.azurecr.io/checkoutservice:${{ env.IMAGE_TAG }}
+          kubectl set image deployment/currencyservice currencyservice=${{ env.ACR_NAME }}.azurecr.io/currencyservice:${{ env.IMAGE_TAG }}
+          kubectl set image deployment/emailservice emailservice=${{ env.ACR_NAME }}.azurecr.io/emailservice:${{ env.IMAGE_TAG }}
+          kubectl set image deployment/frontend frontend=${{ env.ACR_NAME }}.azurecr.io/frontend:${{ env.IMAGE_TAG }}
+          kubectl set image deployment/loadgenerator loadgenerator=${{ env.ACR_NAME }}.azurecr.io/loadgenerator:${{ env.IMAGE_TAG }}
+          kubectl set image deployment/paymentservice paymentservice=${{ env.ACR_NAME }}.azurecr.io/paymentservice:${{ env.IMAGE_TAG }}
+          kubectl set image deployment/recommendationservice recommendationservice=${{ env.ACR_NAME }}.azurecr.io/recommendationservice:${{ env.IMAGE_TAG }}
+          kubectl set image deployment/redis-cart redis-cart=${{ env.ACR_NAME }}.azurecr.io/redis-cart:${{ env.IMAGE_TAG }}
+          kubectl set image deployment/shippingservice shippingservice=${{ env.ACR_NAME }}.azurecr.io/shippingservice:${{ env.IMAGE_TAG }}
 
       # ================================
       # Rollout Status
@@ -85,6 +93,8 @@ jobs:
           kubectl rollout status deployment/checkoutservice
           kubectl rollout status deployment/currencyservice
           kubectl rollout status deployment/emailservice
+          kubectl rollout status deployment/frontend
+          kubectl rollout status deployment/loadgenerator
           kubectl rollout status deployment/paymentservice
           kubectl rollout status deployment/recommendationservice
           kubectl rollout status deployment/redis-cart
